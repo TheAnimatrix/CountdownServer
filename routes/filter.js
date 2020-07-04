@@ -261,7 +261,7 @@ exports.fsCountdowns = async (event, context) => {
     //use one of the three UID indices created rather than filtering
 
     console.log(searchTerm);
-    let searchTag = searchTerm ?? "n/a";
+    let searchTag = (searchTerm!=null)?searchTerm:"n/a";
 
     var params = {
         TableName: 'Countdown_Main',
