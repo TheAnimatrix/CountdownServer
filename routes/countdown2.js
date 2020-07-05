@@ -10,7 +10,7 @@ var admin = require("firebase-admin");
     "Title": input_obj.Title,
     "Description": input_obj.Description,
     "TAG": input_obj.TAG,
-    "Expired": input_obj.Expired,
+    "expired_sort(expired)": input_obj.Expired,
     "Premium": input_obj.Premium,
     "Status": input_obj.Status,
     "Timestamp": Date.now().toString()
@@ -375,15 +375,11 @@ class CountdownQuery {
         //TODO: define pagination for all possible orderBy types
         //PRECONDITION CHECK, wrapper:orderBy,paginateKey,status
         {
-            let possibleOrderByCases = ["expired", "timestamp", "title", "status"];
+            let possibleOrderByCases = ["expired_sort(expired)", "timestamp", "title", "status"];
             if (possibleOrderByCases.indexOf(orderBy) == -1) throw {
                 error: "12",
                 message: "ORDERING_COLUMN_INVALID"
             };
-            if(orderBy=="expired")
-            {
-                orderBy="expired_sort(expired)"
-            }
             if (paginateKey != null) {
 
                 if (!paginateKey.type) throw {
@@ -395,7 +391,7 @@ class CountdownQuery {
                     message: "PAGINATE_KEY_TYPE_INVALID",
                     errorData: paginateKey.type
                 };
-                if (paginateKey.type == "expired" || paginateKey.type == "timestamp")
+                if (paginateKey.type == "expired_sort(expired)" || paginateKey.type == "timestamp")
                     if (typeof (paginateKey.key) != "number") throw {
                         error: "15",
                         message: "PAGINATE_KEY_TYPE_MISMATCH",
@@ -455,7 +451,7 @@ class CountdownQuery {
             let conditions = 0;
 
             if (paginateKey != null) {
-                //timestamp and expired are integers                let possibleOrderByCases = ["expired","timestamp","title","status"];
+                //timestamp and expired are integers                let possibleOrderByCases = ["expired_sort(expired)","timestamp","title","status"];
                 if (typeof (paginateKey.key) == "string") {
                     whereQuery += ` ((${orderBy} ${(asc)?'>':'<'} '${paginateKey.key}') OR (${orderBy} = '${paginateKey.key}' AND id > ${paginateKey.id})) `;
                 } else {
@@ -557,7 +553,7 @@ class CountdownQuery {
     async getCountdownsSortedAndFilteredPaginatedPublic(pool, {
 
         //ORDERING title, timestamp, expired
-        orderBy = "expired",
+        orderBy = "expired_sort(expired)",
         asc = true,
         //PREVIOUS KEY FOR PAGINATION
         paginateKey = null,
@@ -577,7 +573,7 @@ class CountdownQuery {
 
         //PRECONDITION CHECK, wrapper:orderBy,paginateKey
         {
-            let possibleOrderByCases = ["expired", "timestamp", "title", "status"];
+            let possibleOrderByCases = ["expired_sort(expired)", "timestamp", "title", "status"];
             if (possibleOrderByCases.indexOf(orderBy) == -1) throw {
                 error: "12",
                 message: "ORDERING_COLUMN_INVALID"
@@ -593,7 +589,7 @@ class CountdownQuery {
                     message: "PAGINATE_KEY_TYPE_INVALID",
                     errorData: paginateKey.type
                 };
-                if (paginateKey.type == "expired" || paginateKey.type == "timestamp")
+                if (paginateKey.type == "expired_sort(expired)" || paginateKey.type == "timestamp")
                     if (typeof (paginateKey.key) != "number") throw {
                         error: "15",
                         message: "PAGINATE_KEY_TYPE_MISMATCH",
@@ -637,7 +633,7 @@ class CountdownQuery {
             let conditions = 0;
 
             if (paginateKey != null) {
-                //timestamp and expired are integers                let possibleOrderByCases = ["expired","timestamp","title","status"];
+                //timestamp and expired are integers                let possibleOrderByCases = ["expired_sort(expired)","timestamp","title","status"];
                 if (typeof (paginateKey.key) == "string") {
                     whereQuery += ` ((${orderBy} ${(asc)?'>':'<'} '${paginateKey.key}') OR (${orderBy} = '${paginateKey.key}' AND id > ${paginateKey.id})) `;
                 } else {
