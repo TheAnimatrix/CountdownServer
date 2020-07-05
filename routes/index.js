@@ -95,7 +95,7 @@ router.get('/getPublicCountdowns', async (req, res, next) => {
           console.log(e);
           paginateKey = req.query.paginateKey; //propagate json parse error;
         }
-        if (["expired", "timestamp"].indexOf(paginateKey.type) != -1) paginateKey.key = parseInt(paginateKey.key);
+        if (["expired_sort(expired)", "timestamp"].indexOf(paginateKey.type) != -1) paginateKey.key = parseInt(paginateKey.key);
         paginateKey.id = parseInt(paginateKey.id);
         console.log(paginateKey);
         options.paginateKey = paginateKey;
@@ -149,7 +149,7 @@ router.get('/getUserCountdowns', async (req, res, next) => {
           console.log(e);
           paginateKey = req.query.paginateKey; //propagate json parse error;
         }
-        if (["expired", "timestamp"].indexOf(paginateKey.type) != -1) paginateKey.key = parseInt(paginateKey.key);
+        if (["expired_sort(expired)", "timestamp"].indexOf(paginateKey.type) != -1) paginateKey.key = parseInt(paginateKey.key);
         paginateKey.id = parseInt(paginateKey.id);
         console.log(paginateKey);
         options.paginateKey = paginateKey;
