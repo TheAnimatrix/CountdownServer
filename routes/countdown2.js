@@ -184,7 +184,7 @@ function validateNewCountdownInputs(obj) {
     }
     obj.Expired = obj.Expired.toString();
     if (!obj.hasOwnProperty('Status')) obj.Status = "private";
-    if (!obj.hasOwnProperty('Premium')) obj.Premium = "F";
+    if (!obj.hasOwnProperty('Premium')) obj.Premium = "false"; else if(obj.Premium.toLowerCase()=="true" || obj.Premium==true) obj.Premium = "true";
     return obj;
 }
 
@@ -743,7 +743,7 @@ class CountdownResQuery extends CountdownQuery {
 
     //body:Countdown
     //header:token
-    async insertCountdown(pool, req, res) {
+    async insertCountdown(pool, req, res,{status="private"}) {
         var response = {
             statusCode: 400,
             body: "Nothing."
@@ -802,7 +802,7 @@ class CountdownResQuery extends CountdownQuery {
             try {
                 //this function queries for user with timestamp field, if exists compares with current time and returns true if <5min otherwise false, if field is absent then first countdown so proceed
                 result = await CountdownUser.getUserLastCountdownTimestamp(pool, token.uid);
-                if (typeof result == 'object' && !result.hasOwnProperty("premium")) {
+                if (typeof result == 'object' && !result.hasOwnProperty("premium")) { //if object it's error,if success it'll be bool
                     response.statusCode = 400;
                     response.body = result;
                     response.body = string(response.body);
@@ -843,7 +843,7 @@ class CountdownResQuery extends CountdownQuery {
                 title: input_obj.Title,
                 tags: input_obj.TAG,
                 expired: input_obj.Expired,
-                premium: (input_obj.Premium || input_obj.Premium == "True"),
+                premium: (input_obj.Premium=="true"),
                 status: input_obj.Status,
             });
             if (cd.isInserted) return {
@@ -854,7 +854,7 @@ class CountdownResQuery extends CountdownQuery {
 
             try {
                 let data = await pool.query(`INSERT INTO ${this.tableName}(uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags,url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *;`,
-                    [cd.uid, cd.username, cd.title, cd.description, cd.expired, cd.premium, cd.status, cd.timestamp, cd.final_timestamp, cd.deleted, cd.tags, input_obj.url]);
+                    [cd.uid, cd.username, cd.title, cd.description, cd.expired, cd.premium, status, cd.timestamp, cd.final_timestamp, cd.deleted, cd.tags, input_obj.url]);
                 response.statusCode = 200;
                 response.body = {
                     "event": "Success",

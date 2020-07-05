@@ -185,7 +185,7 @@ router.post('/newPublicCountdown', async (req, res, next) => {
   //TODO: checkAuth and shit, re-use old code but have to implement countdown_users first with index on uid.
   let response = await authenticator(req,res,next);
   req.body.Status = "waiting";
-  if(!response.body) {req.headers.token=response;response = await new CountdownResQuery().insertCountdown(this.pool,req,res)};
+  if(!response.body) {req.headers.token=response;response = await new CountdownResQuery().insertCountdown(this.pool,req,res,{status:"watiting"})};
   if (!response.statusCode) response.statusCode = 500;
   let statusCode = response.statusCode;
   delete response.statusCode;
