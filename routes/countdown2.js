@@ -384,10 +384,6 @@ class CountdownQuery {
             {
                 orderBy="expired_sort(expired)"
             }
-            if(paginateKey.type=="expired_sort(expired)")
-            {
-                paginateKey.type="expired"
-            }
             if (paginateKey != null) {
 
                 if (!paginateKey.type) throw {
@@ -586,14 +582,6 @@ class CountdownQuery {
                 error: "12",
                 message: "ORDERING_COLUMN_INVALID"
             };
-            if(orderBy=="expired")
-            {
-                orderBy="expired_sort(expired)"
-            }
-            if(paginateKey.type=="expired_sort(expired)")
-            {
-                paginateKey.type="expired"
-            }
             if (paginateKey != null) {
 
                 if (!paginateKey.type) throw {
