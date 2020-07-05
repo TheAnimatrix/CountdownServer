@@ -375,7 +375,7 @@ class CountdownQuery {
         //TODO: define pagination for all possible orderBy types
         //PRECONDITION CHECK, wrapper:orderBy,paginateKey,status
         {
-            let possibleOrderByCases = ["expired", "timestamp", "title", "status"];
+            let possibleOrderByCases = ["expired_sort(expired)","expired", "timestamp", "title", "status"];
             if (possibleOrderByCases.indexOf(orderBy) == -1) throw {
                 error: "12",
                 message: "ORDERING_COLUMN_INVALID"
@@ -577,7 +577,7 @@ class CountdownQuery {
 
         //PRECONDITION CHECK, wrapper:orderBy,paginateKey
         {
-            let possibleOrderByCases = ["expired", "timestamp", "title", "status"];
+            let possibleOrderByCases = ["expired_sort(expired)","expired", "timestamp", "title", "status"];
             if (possibleOrderByCases.indexOf(orderBy) == -1) throw {
                 error: "12",
                 message: "ORDERING_COLUMN_INVALID"
