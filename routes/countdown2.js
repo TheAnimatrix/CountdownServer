@@ -530,12 +530,14 @@ class CountdownQuery {
 
                 const [lastCountdown] = countdowns.slice(-1);
 
+                let k;
+                if(orderBy == "expired_sort(expired)") k = "expired"; else k = orderBy;
                 let key = null;
                 if (lastCountdown == undefined) key = null;
                 else
                     key = {
                         "type": orderBy,
-                        "key": lastCountdown[orderBy],
+                        "key": lastCountdown[k],
                         "id": lastCountdown.id
                     };
                 return {
@@ -708,9 +710,11 @@ class CountdownQuery {
 
                 const [lastCountdown] = countdowns.slice(-1);
 
+                let k;
+                if(orderBy == "expired_sort(expired)") k = "expired"; else k = orderBy;
                 let key = {
                     "type": orderBy,
-                    "key": !lastCountdown ? lastCountdown : lastCountdown[orderBy],
+                    "key": !lastCountdown ? lastCountdown : lastCountdown[k],
                     "id": !lastCountdown ? lastCountdown : lastCountdown.id
                 };
                 return {
