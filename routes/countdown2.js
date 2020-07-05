@@ -743,7 +743,7 @@ class CountdownResQuery extends CountdownQuery {
 
     //body:Countdown
     //header:token
-    async insertCountdown(pool, req, res,{status="private"}) {
+    async insertCountdown(pool, req, res,{status="private"}={}) {
         var response = {
             statusCode: 400,
             body: "Nothing."
