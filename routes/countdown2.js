@@ -10,7 +10,7 @@ var admin = require("firebase-admin");
     "Title": input_obj.Title,
     "Description": input_obj.Description,
     "TAG": input_obj.TAG,
-    "expired_sort(expired)": input_obj.Expired,
+    "expired": input_obj.Expired,
     "Premium": input_obj.Premium,
     "Status": input_obj.Status,
     "Timestamp": Date.now().toString()
@@ -172,7 +172,7 @@ function validateNewCountdownInputs(obj) {
     if (isUndefined(obj)) return false;
     if (isUndefined(obj.Description)) obj.Description = "No Description";
     if (isUndefined(obj.Title)) return false;
-    if (isUndefined(obj.TAG)) return false;
+    if (!isUndefined(obj.TAG))
     if (!Array.isArray(obj.TAG)) throw "TAGS_INVALID_FORMAT";
     if (isUndefined(obj.Expired)) return false;
     try {
@@ -202,7 +202,7 @@ class CountdownQuery {
         };
         let response;
         try {
-            response = await pool.query(`INSERT INTO ${this.tableName} (uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11);`,
+            response = await pool.query(`INSERT INTO ${this.tableName} (uid,username,title,description,expired_sort(expired),premium,status,timestamp,final_timestamp,deleted,tags) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11);`,
                 [cd.uid, cd.username, cd.title, cd.description, cd.expired, cd.premium, cd.status, cd.timestamp, cd.final_timestamp, cd.deleted, cd.tags]);
         } catch (e) {
             console.log(`Insert Error ${e}`);
@@ -314,7 +314,7 @@ class CountdownQuery {
             }
             if (removeExpired) {
                 if (conditions > 0) whereQuery += "and ";
-                whereQuery += `expired > EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
+                whereQuery += `expired_sort(expired) > EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
                 conditions++;
             }
 
@@ -451,7 +451,7 @@ class CountdownQuery {
             let conditions = 0;
 
             if (paginateKey != null) {
-                //timestamp and expired are integers                let possibleOrderByCases = ["expired_sort(expired)","timestamp","title","status"];
+                //timestamp and expired are integers                let possibleOrderByCases = ["expired","timestamp","title","status"];
                 if (typeof (paginateKey.key) == "string") {
                     whereQuery += ` ((${orderBy} ${(asc)?'>':'<'} '${paginateKey.key}') OR (${orderBy} = '${paginateKey.key}' AND id > ${paginateKey.id})) `;
                 } else {
@@ -491,7 +491,7 @@ class CountdownQuery {
             }
             if (removeExpired != null) {
                 if (conditions > 0) whereQuery += "and ";
-                whereQuery += `expired ${(!removeExpired)?'>':'<'} EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
+                whereQuery += `expired_sort(expired) ${(!removeExpired)?'>':'<'} EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
                 conditions++;
             }
 
@@ -635,7 +635,7 @@ class CountdownQuery {
             let conditions = 0;
 
             if (paginateKey != null) {
-                //timestamp and expired are integers                let possibleOrderByCases = ["expired_sort(expired)","timestamp","title","status"];
+                //timestamp and expired are integers                let possibleOrderByCases = ["expired","timestamp","title","status"];
                 if (typeof (paginateKey.key) == "string") {
                     whereQuery += ` ((${orderBy} ${(asc)?'>':'<'} '${paginateKey.key}') OR (${orderBy} = '${paginateKey.key}' AND id > ${paginateKey.id})) `;
                 } else {
@@ -668,7 +668,7 @@ class CountdownQuery {
             }
             if (removeExpired != null) {
                 if (conditions > 0) whereQuery += "and ";
-                whereQuery += `expired ${(!removeExpired)?'>':'<'} EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
+                whereQuery += `expired_sort(expired) ${(!removeExpired)?'>':'<'} EXTRACT(EPOCH FROM TIMESTAMP 'now') * 1000 `;
                 conditions++;
             }
 
@@ -687,7 +687,7 @@ class CountdownQuery {
             try {
 
                 let query = `SELECT * FROM countdown_main${whereQuery}ORDER BY ${orderBy} ${(asc)?'ASC':'DESC'},id LIMIT ${limit}`;
-                console.log(`QUERY : ${query} ${query.indexOf("$2")}`);
+                console.log(`QUERY : ${query} ${(query.indexOf("$2") > -1)?"search present":"only limit"}`);
 
                 let response = await pool.query({
                     text: `SELECT * FROM countdown_main${whereQuery}ORDER BY ${orderBy} ${(asc)?'ASC':'DESC'},id LIMIT $1`,
@@ -711,7 +711,7 @@ class CountdownQuery {
                 const [lastCountdown] = countdowns.slice(-1);
 
                 let k;
-                if(orderBy == "expired_sort(expired)") k = "expired"; else k = orderBy;
+                if(orderBy == "expired_sort(expired)") k = "expired"; else k = orderBy; //expired_sort(expired)
                 let key = {
                     "type": orderBy,
                     "key": !lastCountdown ? lastCountdown : lastCountdown[k],
@@ -739,6 +739,11 @@ class CountdownResQuery extends CountdownQuery {
 
     constructor() {
         super();
+    }
+
+    
+    async addTag(pool,tag){
+        await pool.query(`INSERT INTO countdown_tags (tag,used) VALUES ($1,$2)`,[tag,1]);
     }
 
     //body:Countdown
@@ -769,6 +774,7 @@ class CountdownResQuery extends CountdownQuery {
             }
 
             try {
+                console.log(body);
                 input_obj = validateNewCountdownInputs(body);
                 if (!input_obj) {
                     response.statusCode = 400;
@@ -794,14 +800,14 @@ class CountdownResQuery extends CountdownQuery {
                 return response;
             }
         }
-        //3. we have a nice token with us, now we gotta check it with firebase
-        let token = req.headers.token;
-        console.log(token);
-        let result = null; {
+        
+        let result = null; 
+        let token = res.locals.token;
+        {
 
             try {
                 //this function queries for user with timestamp field, if exists compares with current time and returns true if <5min otherwise false, if field is absent then first countdown so proceed
-                result = await CountdownUser.getUserLastCountdownTimestamp(pool, token.uid);
+                result = await CountdownUser.getUserLastCountdownTimestamp(pool, token.user_id, input_obj);
                 if (typeof result == 'object' && !result.hasOwnProperty("premium")) { //if object it's error,if success it'll be bool
                     response.statusCode = 400;
                     response.body = result;
@@ -837,7 +843,7 @@ class CountdownResQuery extends CountdownQuery {
         //4. get countdown from token;push to db;
         {
             let cd = new CountdownData({
-                uid: token.uid,
+                uid: token.user_id,
                 username: input_obj.username,
                 description: input_obj.Description,
                 title: input_obj.Title,
@@ -845,6 +851,7 @@ class CountdownResQuery extends CountdownQuery {
                 expired: input_obj.Expired,
                 premium: (input_obj.Premium=="true"),
                 status: input_obj.Status,
+                url:input_obj.url ?? "",
             });
             if (cd.isInserted) return {
                 "event": "Error",
@@ -853,6 +860,7 @@ class CountdownResQuery extends CountdownQuery {
             };
 
             try {
+                console.log(`ADD COUNTDOWN Query: INSERT INTO ${this.tableName}(uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags,url) VALUES (${cd.uid},${cd.username},${cd.title},${cd.description},${cd.expired},${cd.premium},${status},${cd.timestamp},${cd.final_timestamp},${cd.deleted},${cd.tags},${input_obj.url}) RETURNING *;`)
                 let data = await pool.query(`INSERT INTO ${this.tableName}(uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags,url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *;`,
                     [cd.uid, cd.username, cd.title, cd.description, cd.expired, cd.premium, status, cd.timestamp, cd.final_timestamp, cd.deleted, cd.tags, input_obj.url]);
                 response.statusCode = 200;
@@ -1070,6 +1078,7 @@ class CountdownResQuery extends CountdownQuery {
 
 }
 
+
 class CountdownUserData {
     //auth_time,email_verified,exp,iat,iss,sub,
     constructor({
@@ -1166,12 +1175,13 @@ class CountdownUser {
 
     }
 
-    static async getUserLastCountdownTimestamp(pool, uid) {
+    static async getUserLastCountdownTimestamp(pool, uid, input_obj) {
         const MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN = 2;
         const MIN_DELAY_BETWEEN_NEW_COUNTDOWN = MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN * 60 * 1000;
         let data;
         try {
             data = await pool.query(`SELECT * FROM countdown_users WHERE uid=$1 LIMIT 1;`, [uid]);
+            input_obj.username = data.rows[0].name;
         } catch (e) {
             console.log(string(e) + " error in getUserLastCountdown first try cathch");
             return new Error2("Error", string(e), "SERVER_ERR", undefined);
