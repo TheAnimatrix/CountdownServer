@@ -1150,7 +1150,7 @@ class CountdownUser {
 
         this.tableName = "countdown_users";
     }
-
+    
     static async insertUser(pool, decodedToken) {
         this.tableName = "countdown_users";
         let user_obj = decodedToken;
@@ -1161,8 +1161,8 @@ class CountdownUser {
         if (user_obj.hasOwnProperty('firebase')) delete user_obj.firebase;
         user_obj.last_countdown_timestamp = Date.now().toString();
         const insertItem = new CountdownUserData(user_obj);
-        let result = await pool.query(`INSERT INTO ${this.tableName}(${insertItem.columnNamesInOrder}) VALUES(${insertItem.columnValues}) ON CONFLICT (uid) DO UPDATE SET last_countdown_timestamp = excluded.last_countdown_timestamp`, insertItem.toArrayInOrder);
-        return result;
+        let result = await pool.query(`INSERT INTO ${this.tableName}(${insertItem.columnNamesInOrder}) VALUES(${insertItem.columnValues}) ON CONFLICT (uid) DO UPDATE SET last_countdown_timestamp = excluded.last_countdown_timestamp RETURNING *`, insertItem.toArrayInOrder);
+        return result.rows[0];
         try {
 
         } catch (e) {
@@ -1175,16 +1175,23 @@ class CountdownUser {
 
     }
 
-    static async getUserLastCountdownTimestamp(pool, uid, input_obj) {
+    static async getUserLastCountdownTimestamp(pool, uid, input_obj,[token]) {
         const MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN = 2;
         const MIN_DELAY_BETWEEN_NEW_COUNTDOWN = MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN * 60 * 1000;
         let data;
         try {
             data = await pool.query(`SELECT * FROM countdown_users WHERE uid=$1 LIMIT 1;`, [uid]);
+            if(data.rows.length>0)
             input_obj.username = data.rows[0].name;
+            else if (token)
+            {data = await this.insertUser(pool,token);
+            input_obj.username = data.rows[0].name;}
+            else
+            throw "User not found. Token null."
         } catch (e) {
-            console.log(string(e) + " error in getUserLastCountdown first try cathch");
-            return new Error2("Error", string(e), "SERVER_ERR", undefined);
+            console.log(e);
+            console.log("error in getUserLastCountdown first try catch");
+            return new Error2("Error", `${e}`, "SERVER_ERR", undefined);
         }
         console.log("data from gult : " + string(data.rows));
         if (data.rowCount && data.rowCount > 0) {
