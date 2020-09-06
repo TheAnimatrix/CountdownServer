@@ -1175,7 +1175,7 @@ class CountdownUser {
 
     }
 
-    static async getUserLastCountdownTimestamp(pool, uid, input_obj,[token]) {
+    static async getUserLastCountdownTimestamp(pool, uid, input_obj) {
         const MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN = 2;
         const MIN_DELAY_BETWEEN_NEW_COUNTDOWN = MINUTES_DELAY_BETWEEN_NEW_COUNTDOWN * 60 * 1000;
         let data;
@@ -1183,11 +1183,6 @@ class CountdownUser {
             data = await pool.query(`SELECT * FROM countdown_users WHERE uid=$1 LIMIT 1;`, [uid]);
             if(data.rows.length>0)
             input_obj.username = data.rows[0].name;
-            else if (token)
-            {data = await this.insertUser(pool,token);
-            input_obj.username = data.rows[0].name;}
-            else
-            throw "User not found. Token null."
         } catch (e) {
             console.log(e);
             console.log("error in getUserLastCountdown first try catch");
