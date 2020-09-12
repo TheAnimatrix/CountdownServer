@@ -181,6 +181,7 @@ router.post('/getPublicCountdowns', Auth, async (req, res, next) => {
         }
 
       }
+      
       var result = await new CountdownQuery().getCountdownsSortedAndFilteredPaginatedPublic(this.pool, options);
       result.dataLength = result.data.length;
       response.statusCode = 200;
