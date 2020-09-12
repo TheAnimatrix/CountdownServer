@@ -81,13 +81,12 @@ from (
 ) as dt(tags);`); */
 router.get('/tags', Auth, async (req, res, next) => {
   //get all tags;
-  try{
-  var response = await this.pool.query(`
+  try {
+    var response = await this.pool.query(`
   select * from countdown_tags`);
-    res.status(200).json({"event":"success","data":response.rows});
-  }catch(e)
-  {
-    res.status(503).json({"event":"error","error":503,"errorMessage":JSON.stringify(e)});
+    res.status(200).json({ "event": "success", "data": response.rows });
+  } catch (e) {
+    res.status(503).json({ "event": "error", "error": 503, "errorMessage": JSON.stringify(e) });
   }
 
 });
@@ -148,6 +147,7 @@ router.get('/addTag/:tag', Auth, async (req, res, next) => {
 });
 
 
+
 router.post('/getPublicCountdowns', Auth, async (req, res, next) => {
   //TODO: checkAuth and shit
   console.log(req.body);
@@ -181,7 +181,7 @@ router.post('/getPublicCountdowns', Auth, async (req, res, next) => {
         }
 
       }
-      
+
       var result = await new CountdownQuery().getCountdownsSortedAndFilteredPaginatedPublic(this.pool, options);
       result.dataLength = result.data.length;
       response.statusCode = 200;
@@ -213,18 +213,17 @@ router.post('/getPublicCountdowns', Auth, async (req, res, next) => {
 
 });
 
-router.get('/getPrivateCountdowns', Auth, async (req,res,next)=>{
-    try{
-      let options = {limit:100,removeExpired:false,orderBy:'expired_sort(expired)'};
-      let user_id = res.locals.token.user_id;
-      let result = await new CountdownQuery().getCountdownsSortedAndFilteredPaginatedByUser(this.pool, user_id, options);
-      console.log(JSON.stringify(result));
-      res.status(200).json({"event":"success","data":result.data,"dataLength":result.data.length});
-    }catch(e)
-    {
-      console.log(e);
-      res.status(503).json({"event":"error","error":503,"errorMessage":JSON.stringify(e)});
-    }
+router.get('/getPrivateCountdowns', Auth, async (req, res, next) => {
+  try {
+    let options = { limit: 100, removeExpired: false, orderBy: 'expired_sort(expired)' };
+    let user_id = res.locals.token.user_id;
+    let result = await new CountdownQuery().getCountdownsSortedAndFilteredPaginatedByUser(this.pool, user_id, options);
+    console.log(JSON.stringify(result));
+    res.status(200).json({ "event": "success", "data": result.data, "dataLength": result.data.length });
+  } catch (e) {
+    console.log(e);
+    res.status(503).json({ "event": "error", "error": 503, "errorMessage": JSON.stringify(e) });
+  }
 });
 router.get('/getUserCountdowns', Auth, async (req, res, next) => {
   //TODO: checkAuth and shit
@@ -280,9 +279,39 @@ router.get('/getUserCountdowns', Auth, async (req, res, next) => {
   return res.status(statusCode).json(response.body);
 });
 
-router.post('/newCountdown', Auth,async (req, res, next) => {
+router.post('/newCountdownAdmin', async (req, res, next) => {
+  console.log(req.headers);
+  if (req.headers.specialcode != "Angara61^") return res.status(401).json({ "message": "Unauthorized" });
+  if (!req.body.Title) return res.status(400).json({ "message": "data invalid" });
+
+  let input_obj = req.body;
+
+  let cd = new CountdownData({
+    uid: "GAq5SjlIsxOpfieixYy5Nsb8X442",
+    username: "Frustratymous Topka",
+    description: input_obj.Description,
+    title: input_obj.Title,
+    tags: input_obj.TAG,
+    expired: input_obj.Expired,
+    premium: (input_obj.Premium == "true"),
+    status: "public",
+    url: input_obj.url ?? "",
+  });
+
+  console.log(`ADD COUNTDOWN Query: INSERT INTO countdown_main(uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags,url) VALUES (${cd.uid},${cd.username},${cd.title},${cd.description},${cd.expired},${cd.premium},${cd.status},${cd.timestamp},${cd.final_timestamp},${cd.deleted},${cd.tags},${input_obj.url}) RETURNING *;`)
+  let data = await this.pool.query(`INSERT INTO countdown_main(uid,username,title,description,expired,premium,status,timestamp,final_timestamp,deleted,tags,url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *;`,
+    [cd.uid, cd.username, cd.title, cd.description, cd.expired, cd.premium, cd.status, cd.timestamp, cd.final_timestamp, cd.deleted, cd.tags, input_obj.url]);
+
+  console.log("Added countdown");
+  console.log(data);
+
+  return res.status(200).json({ "message": "success", "item": data.rows[0] });
+
+});
+
+router.post('/newCountdown', Auth, async (req, res, next) => {
   //TODO: checkAuth and shit, re-use old code but have to implement countdown_users first with index on uid.
-    //token is in res.locals.token
+  //token is in res.locals.token
   var response = await new CountdownResQuery().insertCountdown(this.pool, req, res);
   console.log(response);
   if (!response.statusCode) response.statusCode = 500;
